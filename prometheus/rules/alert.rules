@@ -1,0 +1,10 @@
+groups:
+  - name: up
+    rules:
+      - alert: up
+        expr: up == 0
+        for: 0m
+        labels:
+          severity: workhours
+        annotations:
+          summary: Test

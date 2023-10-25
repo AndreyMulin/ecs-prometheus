@@ -1,0 +1,88 @@
+global:
+  scrape_interval:     15s
+  evaluation_interval: 1m
+  external_labels:
+    prometheus: {{ .PROMETHEUS_EXTERNAL_LABEL_PROMETHEUS }}
+    team: {{ .PROMETHEUS_EXTERNAL_LABEL_TEAM }}
+    service : {{ .PROMETHEUS_EXTERNAL_LABEL_SERVICE }}
+
+
+  {{ if .PROMETHEUS_SERVICE_THANOS_PASSWORD }}
+remote_write:
+  - basic_auth:
+      password: {{ .PROMETHEUS_SERVICE_THANOS_PASSWORD }}
+      username: {{ .PROMETHEUS_SERVICE_THANOS_USERNAME }}
+    url: https://thanos-receive.europe-north1-gke.intellij.net/api/v1/receive
+  {{end}}
+
+
+  {{ if .PROMETHEUS_SERVICE_ALERT_MANAGER_PASSWORD }}
+alerting:
+  alertmanagers:
+    - basic_auth:
+        password: {{ .PROMETHEUS_SERVICE_ALERT_MANAGER_PASSWORD }}
+        username: {{ .PROMETHEUS_SERVICE_ALERT_MANAGER_USERNAME }}
+      path_prefix: /alertmanager/
+      scheme: https
+      static_configs:
+        - targets:
+            - mon.europe-north1-gke.intellij.net
+  {{end}}
+
+scrape_configs:
+  - job_name: prometheus
+    honor_timestamps: true
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: /metrics
+    scheme: http
+    follow_redirects: true
+    enable_http2: true
+    static_configs:
+      - targets:
+          - localhost:9090
+  - job_name: ecs
+    #  relabel_configs:
+    metric_relabel_configs:
+      # fix instance from host:mapped_port to containername-rev-hash
+      - source_labels: [ container_name, task_revision, container_arn ]
+        action: replace
+        regex: (.*);(.*);.*-(.*)
+        replacement: $1-$2-$3
+        target_label: instance
+      # use instance_id for node-exporter and cadvisor
+      - source_labels: [ container_name, instance_id ]
+        regex: (node-exporter|cadvisor);(.*)
+        replacement: $2
+        target_label: instance
+      # not needed anymore
+      - regex: container_arn
+        action: labeldrop
+      - source_labels: [ id ]
+        regex: "/ecs/.+/(.{12}).*"
+        target_label: container_hostname
+        replacement: "$1"
+      - source_labels: [ id ]
+        regex: "/ecs/(.*)/.*"
+        target_label: task_id
+        replacement: "$1"
+    file_sd_configs:
+      - files:
+          - /prometheus/ecs_file_sd.yml
+        refresh_interval: 60s
+
+  - job_name: ecs-discover
+    relabel_configs:
+      - source_labels: [ __address__ ]
+        regex: "([^:]+):.+"
+        target_label: instance
+        replacement: "$1"
+    static_configs:
+      - targets:
+          - ecs-discover:8080
+    scrape_interval: 60s
+
+rule_files:
+  - /prometheus/rules/*.rules
+  - /prometheus/rules-common/rules/*.rules
+

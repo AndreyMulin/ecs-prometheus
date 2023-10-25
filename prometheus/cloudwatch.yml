@@ -1,0 +1,65 @@
+---
+delay_seconds: 0
+range_seconds: 300
+metrics:
+  # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/burstable-performance-instances-monitoring-cpu-credits.html
+  - aws_namespace: AWS/EC2
+    aws_metric_name: CPUCreditBalance
+    aws_dimensions: [InstanceId]
+    aws_statistics: [Average]
+  - aws_namespace: AWS/EC2
+    aws_metric_name: CPUUtilization
+    aws_dimensions: [AutoScalingGroupName]
+    aws_statistics: [Average]
+  - aws_namespace: AWS/EC2
+    aws_metric_name: CPUCreditBalance
+    aws_dimensions: [AutoScalingGroupName]
+    aws_statistics: [Average]
+  - aws_namespace: AWS/EC2
+    aws_metric_name: NetworkIn
+    aws_dimensions: [AutoScalingGroupName]
+    aws_statistics: [Average]
+  - aws_namespace: AWS/EC2
+    aws_metric_name: NetworkOut
+    aws_dimensions: [AutoScalingGroupName]
+    aws_statistics: [Average]
+
+  # https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-cloudwatch-monitoring.html
+  - aws_namespace: AWS/ECS/ManagedScaling
+    aws_metric_name: CapacityProviderReservation
+    aws_dimensions: [ClusterName,CapacityProviderName]
+    aws_statistics: [Average]
+  - aws_namespace: AWS/AutoScaling
+    aws_metric_name: GroupDesiredCapacity
+    aws_dimensions: [AutoScalingGroupName]
+    aws_statistics: [Average]
+  - aws_namespace: AWS/AutoScaling
+    aws_metric_name: GroupInServiceCapacity
+    aws_dimensions: [AutoScalingGroupName]
+    aws_statistics: [Average]
+  - aws_namespace: AWS/AutoScaling
+    aws_metric_name: GroupTotalInstances
+    aws_dimensions: [AutoScalingGroupName]
+    aws_statistics: [Average]
+  - aws_namespace: AWS/AutoScaling
+    aws_metric_name: GroupPendingInstances
+    aws_dimensions: [AutoScalingGroupName]
+    aws_statistics: [Average]
+
+
+  # https://docs.aws.amazon.com/AmazonS3/latest/userguide/metrics-dimensions.html
+  # common
+  - aws_namespace: AWS/S3
+    aws_metric_name: BucketSizeBytes
+    aws_dimensions: [StorageType,BucketName]
+    aws_statistics: [Average]
+    range_seconds: 172800  # 2 day
+    period_seconds: 86400
+    set_timestamp: false
+  - aws_namespace: AWS/S3
+    aws_metric_name: NumberOfObjects
+    aws_dimensions: [StorageType,BucketName]
+    aws_statistics: [Average]
+    range_seconds: 172800  # 2 day
+    period_seconds: 86400
+    set_timestamp: false
